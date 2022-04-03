@@ -59,7 +59,7 @@ public class RBNNController {
             imageData.setUsername(requestDto.getUsername());
             imageDataRepository.save(imageData);
 
-            return ResponseEntity.ok(new ImageDataDto(imageData.getTimestamp().getTime(), result.toString()));
+            return ResponseEntity.ok(new ImageDataDto(imageData.getTimestamp().getTime(), result.getFileName().toString()));
         } else {
             return ResponseEntity.of(java.util.Optional.empty());
         }
