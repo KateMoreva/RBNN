@@ -9,6 +9,6 @@ public interface BackgroundRemoverNN {
      * @param image - the path to the image to be processed.
      * @return the path to the image with removed background.
      */
-    Path removeBackground(Path image);
+    Path removeBackground(Path image, String fileName);
 
 }

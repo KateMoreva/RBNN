@@ -2,6 +2,7 @@ plugins {
 	id 'org.springframework.boot' version '2.6.6'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 	id 'java'
+		id "io.freefair.lombok" version "6.4.1"
 }
 
 group = 'polytech'
@@ -13,6 +14,8 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.slf4j:slf4j-api:1.7.25'
+
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 //	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 //	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
