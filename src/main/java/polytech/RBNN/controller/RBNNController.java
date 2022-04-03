@@ -99,10 +99,14 @@ public class RBNNController {
     }
 
     private ResponseEntity<byte[]> getPhoto(String imageUrl) throws IOException {
-        InputStream in = Files.newInputStream(Paths.get(imageUrl));
+        Path pathToImage = Paths.get(imageUrl);
+        InputStream in = Files.newInputStream(pathToImage);
+        byte[] image = in.readAllBytes();
+        Files.delete(pathToImage);
+
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.IMAGE_JPEG);
-        return new ResponseEntity<>(in.readAllBytes(), headers, HttpStatus.CREATED);
+        return new ResponseEntity<>(image, headers, HttpStatus.CREATED);
     }
 
     private ResponseEntity<List<ImageDataDto>> getAllPhotos(List<ImageData> encryptedImagesOfUser) throws IOException {
