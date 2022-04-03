@@ -25,6 +25,7 @@ dependencies {
 //	testImplementation 'org.springframework.security:spring-security-test'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
+	implementation group: 'com.squareup.retrofit2', name: 'converter-gson', version: '2.3.0'
 }
 
 tasks.named('test') {

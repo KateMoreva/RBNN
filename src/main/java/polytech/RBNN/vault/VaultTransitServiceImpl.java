@@ -8,14 +8,14 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.stereotype.Component;
 
 import polytech.RBNN.retrofit.VaultService;
 import retrofit2.Call;
 import retrofit2.Response;
 
+@Component
 public class VaultTransitServiceImpl implements VaultTransitService {
-
-    private static final String TOKEN = "";
 
     private final VaultService vaultService;
 
@@ -27,7 +27,7 @@ public class VaultTransitServiceImpl implements VaultTransitService {
     public String encryptImage(Path path) throws IOException {
         byte[] bytes = Files.readAllBytes(path);
         String base64Data = new String(Base64.encodeBase64(bytes), StandardCharsets.UTF_8);
-        Call<String> encryptCall = vaultService.encrypt(TOKEN, base64Data);
+        Call<String> encryptCall = vaultService.encrypt(getToken(), base64Data);
         Response<String> response = encryptCall.execute();
         if (response.isSuccessful()) {
             return response.body();
@@ -37,7 +37,7 @@ public class VaultTransitServiceImpl implements VaultTransitService {
 
     @Override
     public Path decryptImage(String encryptedData) throws IOException {
-        Call<String> decryptCall = vaultService.decrypt(TOKEN, encryptedData);
+        Call<String> decryptCall = vaultService.decrypt(getToken(), encryptedData);
         Response<String> response = decryptCall.execute();
         if (response.isSuccessful()) {
             return createImage(response.body());
@@ -49,5 +49,9 @@ public class VaultTransitServiceImpl implements VaultTransitService {
         String data = new String(Base64.decodeBase64(base64Data), StandardCharsets.UTF_8);
         String fileName = UUID.randomUUID() + ".png";
         return Files.write(Paths.get(fileName), data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String getToken() {
+        return System.getenv("APP_ORDER_TOKEN");
     }
 }
