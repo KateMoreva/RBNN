@@ -1,5 +1,19 @@
 package polytech.RBNN.controller;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import polytech.RBNN.repository.ImageDataRepository;
+import polytech.RBNN.dto.ImageDataDto;
+import polytech.RBNN.entity.ImageData;
+import polytech.RBNN.ml.BackgroundRemoverNN;
+import polytech.RBNN.vault.VaultTransitService;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,22 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.UUID;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import polytech.RBNN.ImageDataRepository;
-import polytech.RBNN.dto.ImageDataDto;
-import polytech.RBNN.entity.ImageData;
-import polytech.RBNN.ml.BackgroundRemoverNN;
-import polytech.RBNN.vault.VaultTransitService;
+import java.util.stream.Collectors;
 
 @RestController
 public class RBNNController {
@@ -66,6 +67,12 @@ public class RBNNController {
         return getPhoto(imageName);
     }
 
+    @GetMapping("/get-all-images")
+    public ResponseEntity<List<ImageDataDto>> getAllImages(@RequestBody String username) {
+        List<ImageData> encryptedImagesOfUser = imageDataRepository.findAllByUsername(username);
+        return getAllPhotos(encryptedImagesOfUser);
+    }
+
     private static Path saveImage(String imageUrl, String destinationFile) throws IOException {
         URL url = new URL(imageUrl);
         InputStream is = url.openStream();
@@ -97,4 +104,19 @@ public class RBNNController {
         return new ResponseEntity<>(in.readAllBytes(), headers, HttpStatus.CREATED);
     }
 
+    private ResponseEntity<List<ImageDataDto>> getAllPhotos(List<ImageData> encryptedImagesOfUser) {
+        return ResponseEntity.ok(
+            encryptedImagesOfUser.stream()
+                .map(
+                    image -> {
+                        Path pathToDecryptedImage = transitService.decryptImage(image.getData());
+                        return new ImageDataDto(
+                            image.getTimestamp().getTime(),
+                            pathToDecryptedImage.getFileName().toString()
+                        );
+                    }
+                )
+                .collect(Collectors.toList())
+        );
+    }
 }
