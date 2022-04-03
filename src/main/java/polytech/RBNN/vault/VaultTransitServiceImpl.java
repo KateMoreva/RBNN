@@ -15,7 +15,6 @@ import polytech.RBNN.retrofit.VaultService;
 import retrofit2.Call;
 import retrofit2.Response;
 
-@Component
 public class VaultTransitServiceImpl implements VaultTransitService {
 
     private final VaultService vaultService;
