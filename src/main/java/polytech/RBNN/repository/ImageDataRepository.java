@@ -1,4 +1,4 @@
-package polytech.RBNN;
+package polytech.RBNN.repository;
 
 import java.util.List;
 
