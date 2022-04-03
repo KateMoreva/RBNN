@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -68,7 +69,7 @@ public class RBNNController {
     }
 
     @GetMapping("/get-all-images")
-    public ResponseEntity<List<ImageDataDto>> getAllImages(@RequestBody String username) {
+    public ResponseEntity<List<ImageDataDto>> getAllImages(@RequestBody String username) throws IOException {
         List<ImageData> encryptedImagesOfUser = imageDataRepository.findAllByUsername(username);
         return getAllPhotos(encryptedImagesOfUser);
     }
@@ -104,19 +105,17 @@ public class RBNNController {
         return new ResponseEntity<>(in.readAllBytes(), headers, HttpStatus.CREATED);
     }
 
-    private ResponseEntity<List<ImageDataDto>> getAllPhotos(List<ImageData> encryptedImagesOfUser) {
-        return ResponseEntity.ok(
-            encryptedImagesOfUser.stream()
-                .map(
-                    image -> {
-                        Path pathToDecryptedImage = transitService.decryptImage(image.getData());
-                        return new ImageDataDto(
-                            image.getTimestamp().getTime(),
-                            pathToDecryptedImage.getFileName().toString()
-                        );
-                    }
+    private ResponseEntity<List<ImageDataDto>> getAllPhotos(List<ImageData> encryptedImagesOfUser) throws IOException {
+        List<ImageDataDto> imagesToReturn = new ArrayList<>(encryptedImagesOfUser.size());
+        for(ImageData image : encryptedImagesOfUser) {
+            Path pathToDecryptedImage = transitService.decryptImage(image.getData());
+            imagesToReturn.add(
+                new ImageDataDto(
+                    image.getTimestamp().getTime(),
+                    pathToDecryptedImage.getFileName().toString()
                 )
-                .collect(Collectors.toList())
-        );
+            );
+        }
+        return ResponseEntity.ok(imagesToReturn);
     }
 }
