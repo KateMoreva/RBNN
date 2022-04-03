@@ -1,5 +1,17 @@
 package polytech.RBNN.controller;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import polytech.RBNN.dto.ImageDataDto;
+import polytech.RBNN.dto.RequestDto;
+import polytech.RBNN.entity.ImageData;
+import polytech.RBNN.ml.BackgroundRemoverNN;
+import polytech.RBNN.repository.ImageDataRepository;
+import polytech.RBNN.vault.VaultTransitService;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,22 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import polytech.RBNN.dto.ImageDataDto;
-import polytech.RBNN.dto.RequestDto;
-import polytech.RBNN.entity.ImageData;
-import polytech.RBNN.ml.BackgroundRemoverNN;
-import polytech.RBNN.repository.ImageDataRepository;
-import polytech.RBNN.vault.VaultTransitService;
+import static polytech.RBNN.Utils.IMG_FOLDER;
 
 @RestController
 public class RBNNController {
@@ -49,19 +46,22 @@ public class RBNNController {
 
     @PostMapping("/process-image")
     public ResponseEntity<ImageDataDto> processImage(@RequestBody RequestDto requestDto) throws IOException {
-        String fileName = UUID.randomUUID() + ".jpeg";
+        String fileName = UUID.randomUUID() + ".jpg";
         Path path = saveImage(requestDto.getImageUrl(), fileName);
-        Path result = backgroundRemover.removeBackground(path);
+        Path result = backgroundRemover.removeBackground(path, fileName);
+        if (result != Path.of("")) {
+            String encryptedImage = transitService.encryptPath(result);
 
-        String encryptedImage = transitService.encryptPath(result);
+            ImageData imageData = new ImageData();
+            imageData.setData(encryptedImage);
+            imageData.setTimestamp(new Timestamp(System.currentTimeMillis()));
+            imageData.setUsername(requestDto.getUsername());
+            imageDataRepository.save(imageData);
 
-        ImageData imageData = new ImageData();
-        imageData.setData(encryptedImage);
-        imageData.setTimestamp(new Timestamp(System.currentTimeMillis()));
-        imageData.setUsername(requestDto.getUsername());
-        imageDataRepository.save(imageData);
-
-        return ResponseEntity.ok(new ImageDataDto(imageData.getTimestamp().getTime(), result.getFileName().toString()));
+            return ResponseEntity.ok(new ImageDataDto(imageData.getTimestamp().getTime(), result.toString()));
+        } else {
+            return ResponseEntity.of(java.util.Optional.empty());
+        }
     }
 
     @GetMapping("/get-image")
@@ -78,7 +78,7 @@ public class RBNNController {
     private static Path saveImage(String imageUrl, String destinationFile) throws IOException {
         URL url = new URL(imageUrl);
         InputStream is = url.openStream();
-        OutputStream os = new FileOutputStream(destinationFile);
+        OutputStream os = new FileOutputStream(IMG_FOLDER+destinationFile);
 
         byte[] b = new byte[2048];
         int length;
@@ -114,10 +114,10 @@ public class RBNNController {
         for(ImageData image : encryptedImagesOfUser) {
             Path pathToDecryptedImage = transitService.decryptPath(image.getData());
             imagesToReturn.add(
-                new ImageDataDto(
-                    image.getTimestamp().getTime(),
-                    pathToDecryptedImage.getFileName().toString()
-                )
+                    new ImageDataDto(
+                            image.getTimestamp().getTime(),
+                            pathToDecryptedImage.getFileName().toString()
+                    )
             );
         }
         return ResponseEntity.ok(imagesToReturn);

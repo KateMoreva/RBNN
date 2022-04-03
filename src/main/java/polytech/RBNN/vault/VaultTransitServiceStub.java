@@ -10,7 +10,7 @@ public class VaultTransitServiceStub implements VaultTransitService {
 
     @Override
     public String encryptPath(Path path) {
-        return path.getFileName().toString();
+        return path.toString();
     }
 
     @Override
