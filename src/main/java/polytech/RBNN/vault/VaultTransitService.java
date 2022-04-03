@@ -5,8 +5,8 @@ import java.nio.file.Path;
 
 public interface VaultTransitService {
 
-    String encryptImage(Path path) throws IOException;
+    String encryptPath(Path path) throws IOException;
 
-    Path decryptImage(String encryptedData) throws IOException;
+    Path decryptPath(String encryptedPath) throws IOException;
 
 }

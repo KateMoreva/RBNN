@@ -2,14 +2,15 @@ package polytech.RBNN.vault;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
 
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Component;
 
+import polytech.RBNN.dto.CiphertextDto;
+import polytech.RBNN.dto.PlaintextDto;
+import polytech.RBNN.dto.VaultResponseDto;
 import polytech.RBNN.retrofit.VaultService;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -24,31 +25,30 @@ public class VaultTransitServiceImpl implements VaultTransitService {
     }
 
     @Override
-    public String encryptImage(Path path) throws IOException {
-        byte[] bytes = Files.readAllBytes(path);
+    public String encryptPath(Path path) throws IOException {
+        byte[] bytes = path.getFileName().toString().getBytes(StandardCharsets.UTF_8);
         String base64Data = new String(Base64.encodeBase64(bytes), StandardCharsets.UTF_8);
-        Call<String> encryptCall = vaultService.encrypt(getToken(), base64Data);
-        Response<String> response = encryptCall.execute();
+        Call<VaultResponseDto<CiphertextDto>> encryptCall = vaultService.encrypt(getToken(), new PlaintextDto(base64Data));
+        Response<VaultResponseDto<CiphertextDto>> response = encryptCall.execute();
         if (response.isSuccessful()) {
-            return response.body();
+            return response.body().getData().getCiphertext();
         }
         throw new IOException(response.code() + " " + response.message());
     }
 
     @Override
-    public Path decryptImage(String encryptedData) throws IOException {
-        Call<String> decryptCall = vaultService.decrypt(getToken(), encryptedData);
-        Response<String> response = decryptCall.execute();
+    public Path decryptPath(String encryptedPath) throws IOException {
+        Call<VaultResponseDto<PlaintextDto>> decryptCall = vaultService.decrypt(getToken(), new CiphertextDto(encryptedPath));
+        Response<VaultResponseDto<PlaintextDto>> response = decryptCall.execute();
         if (response.isSuccessful()) {
-            return createImage(response.body());
+            return decodeFromBase64(response.body().getData().getPlaintext());
         }
         throw new IOException(response.code() + " " + response.message());
     }
 
-    private Path createImage(String base64Data) throws IOException {
-        String data = new String(Base64.decodeBase64(base64Data), StandardCharsets.UTF_8);
-        String fileName = UUID.randomUUID() + ".png";
-        return Files.write(Paths.get(fileName), data.getBytes(StandardCharsets.UTF_8));
+    private Path decodeFromBase64(String base64Data) {
+        String fileName = new String(Base64.decodeBase64(base64Data), StandardCharsets.UTF_8);
+        return Paths.get(fileName);
     }
 
     private String getToken() {
