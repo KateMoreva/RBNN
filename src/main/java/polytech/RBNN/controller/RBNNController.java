@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static polytech.RBNN.Utils.IMG_FOLDER;
+import static polytech.RBNN.Utils.RESULT_FOLDER;
 
 @RestController
 public class RBNNController {
@@ -100,7 +101,7 @@ public class RBNNController {
     }
 
     private ResponseEntity<byte[]> getPhoto(String imageUrl) throws IOException {
-        Path pathToImage = Paths.get(imageUrl);
+        Path pathToImage = Paths.get(RESULT_FOLDER + imageUrl);
         InputStream in = Files.newInputStream(pathToImage);
         byte[] image = in.readAllBytes();
 
